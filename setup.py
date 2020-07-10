@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="qubes-storage-zfs",
-    version="0.2.0",
+    version="0.2.1",
     author="CFCS",
     author_email="cfcs@github.com",
     description="ZFS pool storage for QubesOS VMs",
@@ -20,7 +20,10 @@ setuptools.setup(
     packages=["qubes_storage_zfs"],
     entry_points={
         "qubes.storage":
-        ["testzfs = yozfs_qubes:TestZFS"]
+        [
+            'zfs_zvol = qubes_storage_zfs.zfs:ZFSQPool',
+            'zfs_encrypted = qubes_storage_zfs.zfs_encrypted:ZFSQEncryptedPool'
+        ]
     },
     classifiers=[
         "Programming Language :: Python :: 3.5",
