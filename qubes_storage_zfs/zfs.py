@@ -467,6 +467,7 @@ class ZFSQPool(qubes.storage.Pool):
     @property
     def size(self):
         # Storage pool size in bytes
+        # TODO this is for the pool, not the volume!
         # TODO should we return FREE + ALLOC instead, does Qubes try to
         # infer that?
         i = run_command(
@@ -573,7 +574,7 @@ class ZFSQzvol(qubes.storage.Volume):
         # TODO verify/update this by retrieving ?
         # if lzc_exists(whatever):
         #   self._size = lzc_get_props(whatever, "volsize")
-        self._size = int(size)
+        self._size = size
 
         self.vid = "/".join([self.zfs_ns,
                              "vm",
@@ -917,16 +918,6 @@ class ZFSQzvol(qubes.storage.Volume):
         if not self.rw:
             msg = "Can not resize reađonly volume {!s}".format(self)
             raise qubes.storage.StoragePoolException(msg)
-
-        detected_size = int(run_command(
-            [
-                "zfs",
-                "list",
-                "-Hp",
-                "-o",
-                "volsize",
-                self.zfs_ns,
-            ]))
 
         self.log.warning('zfs resize: %s:%s < %s:%s', type(size), repr(size), type(self.size), repr(self.size))
         if size < self.size:
