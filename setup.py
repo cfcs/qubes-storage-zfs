@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="qubes-storage-zfs",
-    version="0.2.1",
+    version="0.2.2",
     author="CFCS",
     author_email="cfcs@github.com",
     description="ZFS pool storage for QubesOS VMs",

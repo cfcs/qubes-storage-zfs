@@ -67,6 +67,8 @@ import qubes
 import qubes.storage
 import qubes.utils
 
+from time import strftime
+
 # exposed by zfsonlinux:
 import libzfs_core
 
@@ -807,7 +809,6 @@ class ZFSQzvol(qubes.storage.Volume):
         # TODO these are relevant for making things go faster, eventually:
         # https://www.quora.com/What-is-the-main-difference-between-copy_file_range-and-sendfile-system-calls-in-Linux?share=1
         # https://github.com/zfsonlinux/zfs/issues/4237
-        import os
         try:
             indev = os.open(
                 self.source.path,
@@ -987,7 +988,6 @@ class ZFSQzvol(qubes.storage.Volume):
                 snapshot source.path={!r} instead of {!r}".format(
                     self.source.path, self.vid))
 
-        from time import strftime
         now = strftime('%Y-%m-%d.%H:%M:%S.%Z').encode()
         try:
             # take two snapshots, one with timestamp and one
