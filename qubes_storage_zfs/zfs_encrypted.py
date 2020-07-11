@@ -13,7 +13,7 @@ import subprocess
 import time
 import qubes
 import qubes.storage
-import qubes.storage.zfs as qzfs
+import qubes_storage_zfs.zfs as qzfs
 
 # TODO something that checks the unload_timeout
 

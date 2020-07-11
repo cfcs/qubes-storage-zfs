@@ -470,16 +470,21 @@ class ZFSQPool(qubes.storage.Pool):
         # TODO this is for the pool, not the volume!
         # TODO should we return FREE + ALLOC instead, does Qubes try to
         # infer that?
-        i = run_command(
-            [
-                "zpool",
-                "list",
-                "-Hp",
-                "-o",
-                "size",
-                self.zfs_ns,
-            ])
-        return int(i)
+        try:
+            i = run_command(
+                [
+                    "zpool",
+                    "list",
+                    "-Hp",
+                    "-o",
+                    "size",
+                    self.zfs_ns,
+                ])
+            i = int(i)
+        except ValueError:
+            # this can happen when i == '-\n'
+            i = 0
+        return i
 
     @property
     def usage(self):
@@ -673,16 +678,22 @@ class ZFSQzvol(qubes.storage.Volume):
 
     @property
     def size(self):
-        detected_size = int(run_command(
-            [
-                "zfs",
-                "list",
-                "-Hp", # print in bytes
-                "-o",
-                "volsize",
-                self.zfs_ns,
-            ]))
-        self._size = detected_size
+        try:
+            detected_size = int(run_command(
+                [
+                    "zfs",
+                    "list",
+                    "-Hp", # print in bytes
+                    "-o",
+                    "volsize",
+                    self.vid,
+                ]))
+            self._size = detected_size
+        except ValueError as e:
+            # this can happen if size was '-\n' for some reason, like
+            # if this is not an existing volume or if called on a dataset
+            self.log.warning('zfs - volsize is blank for %s'.format(repr(self)))
+            pass
         return self._size
 
     @size.setter
