@@ -611,14 +611,13 @@ class ZFSQzvol(qubes.storage.Volume):
                 "TODO save_on_stop not supported"
             )
 
-        self._size = size
         self._lock = asyncio.Lock()
 
     @locked
     @asyncio.coroutine
     def create(self):
         assert self.vid
-        assert self.size
+        assert self._size
 
         self.log.warning("zfs_zvol:create() vid {}".format(self.vid))
 
@@ -655,7 +654,7 @@ class ZFSQzvol(qubes.storage.Volume):
 
         #i_totally_know_python = DEFAULT_ZVOL_PROPS.copy()
         i_totally_know_python = {}
-        i_totally_know_python[b"volsize"] = self.size
+        i_totally_know_python[b"volsize"] = self._size
         self.log.warning('ZFS: {!r}({}) zvol opts: {}'.format(
             self.vid, self.vid.encode().hex(), i_totally_know_python))
         libzfs_core.lzc_create(
@@ -674,6 +673,16 @@ class ZFSQzvol(qubes.storage.Volume):
 
     @property
     def size(self):
+        detected_size = int(run_command(
+            [
+                "zfs",
+                "list",
+                "-Hp", # print in bytes
+                "-o",
+                "volsize",
+                self.zfs_ns,
+            ]))
+        self._size = detected_size
         return self._size
 
     @size.setter
@@ -925,10 +934,10 @@ class ZFSQzvol(qubes.storage.Volume):
                 "For your own safety, shrinking of %s is"
                 " disabled (%d < %d). If you really know what you"
                 " are doing, use `zfs -o volsize` on %s manually."
-                % (self.name, size, self.size, self.vid)
+                % (self.name, size, self._size, self.vid)
             )
 
-        if size == self.size:
+        if size == self._size:
             return
 
         # TODO for zfs zvol resizing to be valid, it must be a multiple
@@ -940,7 +949,7 @@ class ZFSQzvol(qubes.storage.Volume):
         self.log.warning(
             "ZFSQzvol:resize() oh you must be pretty brave. well ok, \
             yolo. TODO resizing from {} to {} (diff {})".format(
-                self.size, size, size-self.size
+                self._size, size, size-self._size
             )
         )
         # TODO what does dirty mean
@@ -1070,9 +1079,16 @@ class ZFSQzvol(qubes.storage.Volume):
 
     @property
     def usage(self):
-        # "zfs", "get", "used", "self.vid"
-        return 0  # TODO
-
+        detected_size = int(run_command(
+            [
+                "zfs",
+                "list",
+                "-Hp", # print in bytes
+                "-o",
+                "used",
+                self.vid,
+            ]))
+        return detected_size
 
 def _get_zfs_cmdline(cmd):
     """ Build command line for :program:`zfs` call.

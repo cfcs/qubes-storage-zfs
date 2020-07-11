@@ -143,7 +143,8 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                     receiving_cmd))
                 (p, stdout, stderr) = await self._ask_password(receiving_cmd)
                 if p.returncode != 0:
-                    raise Exception(stderr)
+                    # like if the user clicked cancel
+                    raise qubes.storage.StoragePoolException(stderr)
                 return (p, stdout, stderr)
             except Exception as e:
                 self.log.warning(
@@ -151,7 +152,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                         attempt, attempts, e))
                 if attempt == attempts:
                     # out of retries:
-                    raise e
+                    raise qubes.storage.StoragePoolException(e)
 
     def __init__(self, name, zpool_name, ask_password_domain='dom0',
                  unload_timeout=1200, **kwargs):
@@ -282,7 +283,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                             )
                         )
                         # try again:
-                        countdown = 10
+                        countdown = 20
 
     async def ensure_key_is_loaded(self):
         keystatus = qzfs.run_command(
