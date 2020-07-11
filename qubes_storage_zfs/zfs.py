@@ -458,7 +458,7 @@ class ZFSQPool(qubes.storage.Pool):
         return {
             "name": self.name,
             "zfs_ns": self.zfs_ns,
-            "driver": ZFSQpool.driver,
+            "driver": ZFSQPool.driver,
             # block_devices intentionally left out. this info can be pulled
             # via zfs if necessary, and we do NOT want to risk accidentally
             # reformatting them upon reinstantiation, ever.
@@ -522,7 +522,7 @@ class ZFSQzvol(qubes.storage.Volume):
         - self.vid - comes from Pool.init_volume() and is a full path
         to a ZFS zvol, meaning that /dev/zvol/{self.vid} is a valid path.
           It has this structure: {zpool}/vm/{vm_name}/{name}
-          - {zpool} is the zpool backing the ZFSQpool
+          - {zpool} is the zpool backing the ZFSQPool
           - 'vm' is a dataset, using a fixed string to provide namespacing
           - {vm_name} is a dataset specific to the VM
           - {name} is either 'snap', 'current', 'import',
@@ -561,7 +561,7 @@ class ZFSQzvol(qubes.storage.Volume):
         self.vm_name = vm_name
         self.name = name
         assert self.name
-        self.pool = pool # <- ref to parent ZFSQpool
+        self.pool = pool # <- ref to parent ZFSQPool
         self.log = logging.getLogger(
             "qubes.storage.zfs.ZFSQzvol.{}".format(zfs_ns))
         self.log.warning('ZFSQzvol kwargs {}'.format(kwargs))
@@ -692,7 +692,7 @@ class ZFSQzvol(qubes.storage.Volume):
             "zfs - remove() of {} is not fully implemented yet, \
             you will still have a bunch of snapshots and stuff \
             lying around.".format(self.vid))
-        # TODO should signal ZFSQpool to that the vm/{self.vm_name} dataset can
+        # TODO should signal ZFSQPool to that the vm/{self.vm_name} dataset can
         # be cleaned up.
         assert self.vid
         if libzfs_core.lzc_exists(self._vid_snap):

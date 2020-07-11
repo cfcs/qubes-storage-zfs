@@ -43,7 +43,7 @@ def locked(method):
 
 class ZFSQEncryptedPool(qubes.storage.Pool):
     """ZFS pool for encrypted datasets inside an existing
-       ZFSQpool(a.k.a. zfs_zvol)
+       ZFSQPool(a.k.a. zfs_zvol)
     """
 
     driver = "zfs_encrypted"
@@ -170,7 +170,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                                are no more volumes in use.
         :type unload_timeout: str
 
-        :param `**kwargs`: Passed to the underlying :class:`qzfs.ZFSQpool`
+        :param `**kwargs`: Passed to the underlying :class:`qzfs.ZFSQPool`
 
         :raises :class:`qubes.storage.StoragePoolException`:
         ask_password_domain is invalid
