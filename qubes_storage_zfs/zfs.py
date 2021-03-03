@@ -708,7 +708,7 @@ class ZFSQzvol(qubes.storage.Volume):
     @asyncio.coroutine
     def remove(self):
         # all this will likely not work since there will be snapshots
-        # blocking deletion since we are not destroyin recursively.
+        # blocking deletion since we are not destroying recursively.
         # zfs destroy -r is the way to. TODO
         self.log.warning(
             "zfs - remove() of {} is not fully implemented yet, \
@@ -1115,7 +1115,7 @@ def _get_zfs_cmdline(cmd):
         # do we get the poolname here or what?
         # TODO there's defer_destroy / -d
         libzfs_core.lzc_destroy(cmd[1])
-        return None
+        return True
     elif action == "create":
         # libzfs_core.lzc_create seems broken, ideally we would
         # be able to pass in properties at creation time, but
@@ -1136,7 +1136,7 @@ def _get_zfs_cmdline(cmd):
         origin = cmd[1]  # source zvol
         name = cmd[2]  # name of new zvol
         libzfs_core.lzc_clone(name, origin, ds_type="zvol")
-        return None
+        return True
     elif action == "resize":
         log = logging.getLogger("qubes.storage.zfs.resize")
         log.warning("zfs volume resize: rw={} {}".format(
@@ -1151,8 +1151,10 @@ def _get_zfs_cmdline(cmd):
         try:
             libzfs_core.lzc_set_props(name, b"volsize", size)
             libzfs_core.lzc_set_props(name, b"refreservation", b"auto")
+            return True
         except libzfs_core.exceptions.ZFSError as e:
             log.warning("library call failed: {}".format(e))
+            return False
         except NotImplementedError:
             # since this function is not implemented (yet), we fall back
             # to using the CLI utility:
@@ -1161,7 +1163,6 @@ def _get_zfs_cmdline(cmd):
                     "refreservation=auto",
                     "volsize={}".format(size),
                     name]
-        return None
     elif action == "activate":
         # lvm_cmd = ['lvchange', '-ay', cmd[1]]
         return None
@@ -1169,7 +1170,7 @@ def _get_zfs_cmdline(cmd):
         old_name = cmd[1]
         new_name = cmd[2]
         libzfs_core.lzc_rename(source=new_name, target=old_name)
-        return None
+        return True
     else:
         raise NotImplementedError("unsupported action: " + action)
 

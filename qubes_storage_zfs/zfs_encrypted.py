@@ -323,6 +323,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
             time.CLOCK_MONOTONIC_RAW)
 
     def init_volume(self, appvm, volume_config):
+        self.app_reference = appvm.app
         vm_name = appvm.name
         if not hasattr(volume_config, 'zfs_ns'):
             volume_config["zfs_ns"] = self.zfs_ns
