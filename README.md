@@ -119,3 +119,12 @@ TODO implement the "snapshot before start" / "snapshot after shutdown" features 
    - TODO solve issue of how to use the system if the pool driver causes exceptions
 - `sudo systemctl restart qubesd`
 - `qvm-pool --help-drivers` should now list the `zfs_zvol` and `zfs_encrypted` drivers.
+
+# Status wallpaper
+See `tools/bgimg.sh`.
+
+Installation (put that script in e.g. `~/bin/`):
+```shell
+$ crontab -e
+*/15 * * * * ~/bin/bgimg.sh
+```
