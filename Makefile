@@ -5,5 +5,5 @@ clean:
 
 dist: qubes_storage_zfs/* requirements.txt setup.py Makefile README.md
 	make clean
-	python3 setup.py sdist
+	python3 setup.py bdist_rpm
 	find dist/ -name '*.tar*'
