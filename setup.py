@@ -14,8 +14,9 @@ setuptools.setup(
     extras_require={'pyzfs': 'pyzfs>=0.8.0', 'qubes': 'qubes>=4.1.0'},
     version="0.2.2",
     data_files=[
-        ['/etc/qubes-rpc',['qubes-rpc/qubes.AskPassword']],
-        ['/etc/qubes-rpc/policy', ['qubes-rpc/policy/qubes.AskPassword']]
+        ['/etc/qubes-rpc',['dom0/qubes-rpc/qubes.AskPassword']],
+        ['/etc/qubes-rpc/policy', ['dom0/qubes-rpc/policy/qubes.AskPassword']],
+        ['/etc/modules-load.d', ['dom0/modules-load.d/zfs-for-qubes.conf']],
     ],
     entry_points={
         "qubes.storage":
