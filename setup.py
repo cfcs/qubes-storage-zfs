@@ -12,7 +12,7 @@ setuptools.setup(
     python_requires=">=3.5",
     install_requires=["qubes", "pyzfs"],
     extras_require={'pyzfs': 'pyzfs>=0.8.0', 'qubes': 'qubes>=4.1.0'},
-    version="0.2.2",
+    version="0.2.3",
     data_files=[
         ['/etc/qubes-rpc',['dom0/qubes-rpc/qubes.AskPassword']],
         ['/etc/qubes-rpc/policy', ['dom0/qubes-rpc/policy/qubes.AskPassword']],

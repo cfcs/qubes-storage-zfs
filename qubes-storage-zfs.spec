@@ -1,7 +1,7 @@
 %define name qubes-storage-zfs
-%define version 0.2.2
-%define unmangled_version 0.2.2
-%define unmangled_version 0.2.2
+%define version 0.2.3
+%define unmangled_version 0.2.3
+%define unmangled_version 0.2.3
 %define release 1
 
 Summary: ZFS pool storage for QubesOS VMs
