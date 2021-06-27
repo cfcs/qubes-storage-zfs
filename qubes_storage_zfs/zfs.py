@@ -215,7 +215,7 @@ class ZFSQPool(qubes.storage.Pool):
            as ZFS vdevs when setup() is called.
         """
         self.name = name
-        super().__init__(name)
+        super().__init__(name=name)
 
         # avoid things that will come back to bite us:
         try:
