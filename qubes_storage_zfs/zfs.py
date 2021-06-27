@@ -503,6 +503,22 @@ class ZFSQPool(qubes.storage.Pool):
         )
         return int(i)
 
+    def list_volumes(self):                      
+        # List volumes managed by pool
+        i = run_command(                                          
+            [                                                                  
+                "zfs",
+                "list",
+                "-o",                                                 
+                "name",
+                "-r",                       
+                self.zfs_ns                                                
+            ]
+        )                              
+        return i                                                                                   
+ 
+    def get_volume(self, vid):                                     
+        return []
 
 def locked(method):
     """Decorator running given Volume's coroutine under a lock.
