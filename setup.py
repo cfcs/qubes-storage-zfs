@@ -17,7 +17,7 @@ setuptools.setup(
         ['/etc/qubes-rpc',['dom0/qubes-rpc/qubes.AskPassword']],
         ['/etc/qubes-rpc/policy', ['dom0/qubes-rpc/policy/qubes.AskPassword']],
         ['/etc/modules-load.d', ['dom0/modules-load.d/zfs-for-qubes.conf']],
-        ['/etc/udev/rules.d',['dom0/udev/99-qubes-ignore-vm-zdev.rules']],
+        ['/etc/udev/rules.d', ['dom0/udev/99-qubes-ignore-vm-zdev.rules']],
     ],
     entry_points={
         "qubes.storage":
