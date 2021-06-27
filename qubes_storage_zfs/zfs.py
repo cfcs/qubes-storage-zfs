@@ -599,11 +599,14 @@ class ZFSQzvol(qubes.storage.Volume):
         #   self._size = lzc_get_props(whatever, "volsize")
         self._size = size
 
+        # TODO: Parse pool prefix from zfs_ns rather than hardcoding to 's'
         self.vid = "/".join([self.zfs_ns,
+                             "s",
                              "vm",
                              self.vm_name,
                              self.name])
-        self.import_path = b"/".join([self.zfs_ns.encode(), b"import",
+        # TODO: Parse pool prefix from zfs_ns rather than hardcoding to 's'
+        self.import_path = b"/".join([self.zfs_ns.encode(), b"s", b"import",
                                       self.vm_name.encode()])
         self._vid_import = b"/".join([self.import_path, self.name.encode()])
 
