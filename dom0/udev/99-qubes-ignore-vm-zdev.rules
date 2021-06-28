@@ -1,1 +1,0 @@
-ACTION!="remove", SUBSYSTEM=="block", KERNEL=="zd*", PROGRAM="/lib/udev/zvol_id /dev/%k", RESULT=="rpool/s/vm*|rpool/s/import*", ENV{DM_UDEV_DISABLE_DISK_RULES_FLAG}="1", ENV{UDEV_DISABLE_PERSISTENT_STORAGE_RULES_FLAG}="1"

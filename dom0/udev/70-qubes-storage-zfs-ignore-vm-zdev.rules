@@ -1,0 +1,46 @@
+# udev rules for qubes-storage-zfs
+# These prevent our volumes from being available in qvm-block
+# and from spamming "device available" popups to the user.
+
+#
+# Skip if not a block device:
+#
+
+SUBSYSTEM!="block",   GOTO="qubes_storage_zfs_end"
+
+#
+# We may want to hide root devs since attaching them to a
+# vm would require the ZFS module in there.
+# For now this is commented out to allow passthru to e.g.
+# HardenedBSD HVMs:
+#
+##### ENV{ID_FS_TYPE}=="zfs_member", GOTO="qubes_storage_zfs_hide"
+
+#
+# Skip if not a zd device (only consider zvols from now on):
+#
+KERNEL!="zd[0-9]*",   GOTO="qubes_storage_zfs_end"
+
+#
+# We want to hide zvols managed by qubes-storage-zfs:
+#
+KERNEL=="zd[0-9]*" SYMLINK=="*/vm/*/root*",       GOTO="qubes_storage_zfs_hide"
+KERNEL=="zd[0-9]*" SYMLINK=="*/vm/*/private*",    GOTO="qubes_storage_zfs_hide"
+KERNEL=="zd[0-9]*" SYMLINK=="*/vm/*/volatile*",   GOTO="qubes_storage_zfs_hide"
+
+# no positive match, skip:
+GOTO="qubes_storage_zfs_end"
+
+LABEL="qubes_storage_zfs_hide"
+
+# Hide from file selection dialogs?
+# See /usr/lib/udev/rules.d/99-qubes-block.rules
+ENV{UDISKS_IGNORE}="1"
+
+# Hide from qvm_block:
+ENV{DM_UDEV_DISABLE_DISK_RULES_FLAG}="1"
+
+# Not sure what this is, but:
+ENV{UDEV_DISABLE_PERSISTENT_STORAGE_RULES_FLAG}="1"
+
+LABEL="qubes_storage_zfs_end"
