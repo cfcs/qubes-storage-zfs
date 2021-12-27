@@ -215,7 +215,8 @@ class ZFSQPool(qubes.storage.Pool):
            as ZFS vdevs when setup() is called.
         """
         self.name = name
-        super().__init__(name)
+        # TODO don't pass kwargs to super?
+        super().__init__(name=name)
 
         # avoid things that will come back to bite us:
         try:
@@ -232,6 +233,7 @@ class ZFSQPool(qubes.storage.Pool):
                 name.startswith(notok) for notok in ["mirror", "raidz", "spare"]
             ])
             # for zpools, the namespace is simply the name of the zpool:
+            assert name == kwargs.get('zfs_ns', name), "TODO zfs reinitialized with new name"
             self.zfs_ns = name
             assert len(self.zfs_ns) < libzfs_core.MAXNAMELEN
             assert '/' not in self.zfs_ns
@@ -333,10 +335,6 @@ class ZFSQPool(qubes.storage.Pool):
            created).
         """
 
-        if self._exists():
-            raise qubes.storage.StoragePoolException(
-                "setup() on already existing zpool"
-            )
         if not isinstance(self.block_devices, list) \
            or self.block_devices == [] \
            or self.block_devices == ['']:
@@ -346,6 +344,13 @@ class ZFSQPool(qubes.storage.Pool):
                 )
             )
         self.log.warning('zfs blockdevs {!r}'.format(self.block_devices))
+        if self._exists():
+            self.log.warning(
+                "setup() on already existing zpool {}".format(self.zfs_ns)
+            )
+            # TODO should probably still create the underlying datasets
+            # if they aren't present etc.
+            return
         # and maybe letting user pass in options with zpool_atime=no etc?
 
         # TODO if any of this stuff fails we should likely revert the
@@ -648,6 +653,10 @@ class ZFSQzvol(qubes.storage.Volume):
                     )
 
         if libzfs_core.lzc_exists(self.vid.encode()):
+            self.log.warning("zvol {} already exists, can't create. will pretend."
+                             .format(self.vid))
+            # TODO should set self._size to the volume size?
+            return self
             raise qubes.storage.StoragePoolException(
                 "zfs - trying to create already existing zvol {}".format(
                     self.vid
@@ -656,7 +665,7 @@ class ZFSQzvol(qubes.storage.Volume):
 
         if self.source:
             # we're supposed to clone from this, maybe.
-            self.log.warning("zfs volume.create(): there is a .source!")
+            self.log.warning("zfs volume.create(): there is a .source={}!".format(self.source))
         # TODO probably want lzc_clone in some cases.
 
         #i_totally_know_python = DEFAULT_ZVOL_PROPS.copy()

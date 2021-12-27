@@ -120,6 +120,30 @@ TODO implement the "snapshot before start" / "snapshot after shutdown" features 
 - `sudo systemctl restart qubesd`
 - `qvm-pool --help-drivers` should now list the `zfs_zvol` and `zfs_encrypted` drivers.
 
+# Installation on Qubes 4.1 rc 3
+
+As per December 2021, version `0.3.0` of `qubes-storage-zfs` has been adopted for the latest RC, with OpenZFS version `2.1.0-1`.
+
+A number of the APIs seem to have changed, which broke the `super(**kwargs)` calls. As a result of this, the semantics regarding `super()` initialization of pools/volumes in `qubes-storage-zfs` are likely wrong.
+For instance, `ephemeral_volatile` is not handled, nor is `revisions_to_keep`.
+
+### **CHANGES** for Qubes 4.1 rc 3 december 2021
+
+- **Another potentially breaking change** is that in order to faciliate importing volumes from a previous Qubes installation, the checks for "this pool already exists" or "this volume already exists" have been replaced by log messages. I'm not sure how that is supposed to work. It seems like it currently crashes qubesd because the `size` property of the new volume is not initialized, but after crashing it will restart and then the initialization will set this. It works, but it's not pretty. You **SHOULD* make sure there are snapshots in place for the `private` volumes in order to prevent accidental removal if something goes wrong. If anything raises an exception during creation, Qubes will remove all the volumes, which means your data could get deleted. Having snapshots in place prevents `zfs destroy` from working.
+
+- You will need to `sudo pip3 install qubes-storage-zfs.0.3.0.tar.gz` file (made by `make dist`) and **not** `sudo dnf install qubes-storage-zfs-0.3.0.rpm`. The RPM targets the system Python distribution (`3.9`), while qubesd runs on `3.8`. ie the RPM builds are currently broken for this platform.
+
+- `sudo -Eiu` no longer works, which broke `qubes.AskPassword`, so that was updated to `sudo -Eu`.
+
+- It now correctly asks for the password for the actual `encryptionroot` instead of the *expected* `encryptionroot`. Very nice if you botched your `zfs recv` like I did, and shouldn't hurt anybody.
+
+- Installing ZFS
+  - You likely want to use `$(rpm -E %fedora)` instead of `$(rpm -E %dist)` if you go this route, following the official instructions. `%dist` will give you the Qubes release prefixed with a `.`, and `%fedora` will give you the Fedora release (`32` for dom0 in this version)
+  - You'll want `sudo qubes-dom0-update zfs python3-pyzfs`
+  - Installing ZFS from the fedora packages no longer works because the update tooling in Qubes will complain about the SHA1 hashes used to sign the upstream ZFS `rpms`. I could not find a way to override this, but fortunately you can install the RPMs manually with `dnf`, with no signature checking whatsoever, so fear not. You'll need to `sudo qubes-dom0-update`, then copy the resulting RPMs from `/var/lib/qubes/dom0-updates/packages/` in your updatevm. Now, despite rejecting the SHA1 signatures on transfer to dom0, the updatevm will keep them around in cache, so you won't be able to use `qubes-dom0-update` again until you delete `/var/lib/qubes/dom0-updates/{packages,var/cache/dnf}`, but after that it will work again.
+    - Sadly you'll have to repeat this every time there's an update to ZFS which could get annoying. Someone should probably see if OpenZFS upstream would be open to switching the hash algorithm used for signatures.
+
+
 # Status wallpaper
 See `tools/bgimg.sh`.
 

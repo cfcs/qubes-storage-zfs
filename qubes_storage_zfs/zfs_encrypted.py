@@ -91,7 +91,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
             environ["QREXEC_REMOTE_DOMAIN"] = "dom0"
             environ["DISPLAY"] = ":0"
             proc = await asyncio.create_subprocess_exec(
-                    *['sudo','-Eiu','user', '/etc/qubes-rpc/qubes.AskPassword'],
+                    *['sudo','-Eu','user', '/etc/qubes-rpc/qubes.AskPassword'],
                     stdout=pw_pipe_out,
                     stderr=subprocess.PIPE,
                     stdin=subprocess.PIPE,
@@ -104,7 +104,6 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
             proc.stdin.write_eof()
             await proc.wait()
         except subprocess.CalledProcessError as e:
-            # TODO os.close(pw_pipe_in pw_pipe_out)
             os.close(pw_pipe_in)
             os.close(pw_pipe_out)
             self.log.warning(
@@ -190,6 +189,8 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
 
         self.unload_timeout = int(unload_timeout)
         assert self.unload_timeout >= 0
+        self.ephemeral_volatile = kwargs.get('ephemeral_volatile', False)
+        self.revisions_to_keep = kwargs.get('revisions_to_keep', 1)
 
         self.ask_password_domain = ask_password_domain
         if self.ask_password_domain == '':
@@ -286,15 +287,17 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                         countdown = 20
 
     async def ensure_key_is_loaded(self):
-        keystatus = qzfs.run_command(
+        status_and_root = qzfs.run_command(
             ["zfs", "list", "-H",
-             "-o", 'keystatus', self.zfs_ns]
+             "-o", 'keystatus,encryptionroot', self.zfs_ns]
         )
-        self.log.warning("track volume start keystatus {}".format(keystatus))
+        keystatus , encroot = status_and_root.split(b'\t')
+        encroot = encroot.decode().strip()
+        self.log.warning("track volume start keystatus {} encryptionroot {}".format(keystatus, encroot))
         if keystatus.strip() == b'unavailable':
-            await self.ask_password(["zfs", "load-key", self.zfs_ns])
-            # TODO ideally I guess here we would wait for udevd to kick in...
-            await asyncio.sleep(1)
+            await self.ask_password(["zfs", "load-key", encroot])
+            # try to wait for the block devices to appear:
+            qzfs.run_command(['udevadm','settle'])
         if keystatus.strip() == b'-':
             self.log.warning("zfs track volume start err why is keystatus '-' ?")
 
@@ -390,13 +393,26 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
 
         # Namespace for this pool.
         # It will be encrypted, and the datasets and zvols inside
-        # will inheir the encryption key.)
+        # will inherit the encryption key.)
         assert self.zfs_ns.encode() == self.zfs_ns_safety_valve
         if libzfs_core.lzc_exists(self.zfs_ns.encode()):
-            raise qubes.storage.StoragePoolException(
-                "our ns already exists. TODO does this leave a \
-                broken qvm-pool floating around?"
+            self.log.warning("encrypted ns {} already exists, can't setup()!".format(self.zfs_ns))
+            # now we check that the pool we are re-creating is also encrypted
+            p = await asyncio.create_subprocess_exec(
+                *['zfs','list','-H','-o','encryptionroot',self.zfs_ns],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,close_fds=True,
             )
+            out, err = await p.communicate()
+            if p.returncode != 0:
+                raise qubes.storage.StoragePoolException(
+                    "setup() on existing zpool, unexpected error: {}".format(err))
+            if out.strip() != self.zfs_ns.encode():
+                raise qubes.storage.StoragePoolException('setup() on existing zfs_ns: not its own encryptionroot ({} != {})'.format(out.strip(), self.zfs_ns))
+            # return, nothing for us to do:
+            return
+
         (p, stdout, stderr) = await self.ask_password(
             [ # <- cmd list
                 "zfs",
