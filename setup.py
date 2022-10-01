@@ -9,10 +9,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="qubes-storage-zfs",
-    python_requires=">=3.5",
+    python_requires=">=3.8",
     install_requires=["qubes", "pyzfs"],
-    extras_require={'pyzfs': 'pyzfs>=0.8.0', 'qubes': 'qubes>=4.1.0'},
-    version="0.3.0",
+    extras_require={'pyzfs': 'pyzfs>=2.1.0', 'qubes': 'qubes>=4.1.0'},
+    version="0.3.1",
     data_files=[
         ['/etc/qubes-rpc',['dom0/qubes-rpc/qubes.AskPassword']],
         ['/etc/qubes-rpc/policy', ['dom0/qubes-rpc/policy/qubes.AskPassword']],

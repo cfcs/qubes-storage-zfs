@@ -6,7 +6,9 @@ For a breakdown of how the encryption scheme works, see:
 """
 
 import asyncio
-import libzfs_core
+try:
+    import libzfs_core
+except: pass
 import logging
 import os
 import subprocess
@@ -14,6 +16,7 @@ import time
 import qubes
 import qubes.storage
 import qubes_storage_zfs.zfs as qzfs
+import sys
 
 # TODO something that checks the unload_timeout
 
@@ -143,7 +146,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                 (p, stdout, stderr) = await self._ask_password(receiving_cmd)
                 if p.returncode != 0:
                     # like if the user clicked cancel
-                    raise qubes.storage.StoragePoolException(stderr)
+                    raise qubes.storage.StoragePoolException('ask_password: '+stderr)
                 return (p, stdout, stderr)
             except Exception as e:
                 self.log.warning(
@@ -151,7 +154,7 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
                         attempt, attempts, e))
                 if attempt == attempts:
                     # out of retries:
-                    raise qubes.storage.StoragePoolException(e)
+                    raise qubes.storage.StoragePoolException('ask_password: ' + e)
 
     def __init__(self, name, zpool_name, ask_password_domain='dom0',
                  unload_timeout=1200, **kwargs):
@@ -209,16 +212,22 @@ class ZFSQEncryptedPool(qubes.storage.Pool):
         #        )
         #    )
         # TODO validate name
-        if not libzfs_core.lzc_exists(self.zpool_name.encode()):
-            raise qubes.storage.StoragePoolException(
-                "zfs_encrypted: underlying namespace {!r} does \
-                not exist".format(self.zpool_name))
+        if 'libzfs_core' not in sys.modules:
+            raise qubes.storage.StoragePoolException('missing libzfs_core')
+        try:
+            if not libzfs_core.lzc_exists(self.zpool_name.encode()):
+                raise qubes.storage.StoragePoolException(
+                    "zfs_encrypted: underlying namespace {!r} does \
+                    not exist".format(self.zpool_name))
+        except libzfs_core.exceptions.ZFSInitializationFailed as e:
+            self.log.warn('ZFS initialization failed:', str(e))
+            pass # otherwise we get 'Unknown storage pool ' + pool
+            #raise qubes.storage.StoragePoolException(str(e))
 
 
         # Here we configure the prefixes for the datasets we will be making.
         # We get a parent namespace from the underlying, and add to it like:
         # {underlying ns}/encryption/{this pool name}/
-        self.name = name
         self.encryption_ns = b"/".join([self.zpool_name.encode(),
                                         b"encryption"])
         # zfs_ns must be a string:

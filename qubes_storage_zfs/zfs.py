@@ -70,7 +70,10 @@ import qubes.utils
 from time import strftime
 
 # exposed by zfsonlinux:
-import libzfs_core
+try:
+    import libzfs_core
+except:
+    pass
 
 DEFAULT_ZVOL_PROPS = {
         # volmode governs whether stuff is available via /dev/zvol
@@ -144,7 +147,7 @@ required_functionality = [
 ]
 
 for func in required_functionality:
-    assert libzfs_core.is_supported(func)
+    pass #assert libzfs_core.is_supported(func)
 
 
 def run_command(cmd, log=logging.getLogger("qubes.storage.zfs")):
@@ -160,9 +163,9 @@ def run_command(cmd, log=logging.getLogger("qubes.storage.zfs")):
     out, err = p.communicate()
     return_code = p.returncode
     if return_code == 0 and err:
-        log.warning(err)
+        log.warning('run_command: %s', repr(err))
     elif return_code != 0:
-        raise qubes.storage.StoragePoolException(err)
+        raise qubes.storage.StoragePoolException('run_command:' +repr(cmd)+':'+ repr(err))
     return out
 
 
@@ -218,6 +221,10 @@ class ZFSQPool(qubes.storage.Pool):
         # TODO don't pass kwargs to super?
         super().__init__(name=name)
 
+        self.block_devices = (block_devices or "").split(",")
+        # TODO should tell the user that they should specify these as
+        # LVM paths or by-uuid/ etc paths to prevent clashes.
+
         # avoid things that will come back to bite us:
         try:
             assert not name.startswith(
@@ -248,10 +255,6 @@ class ZFSQPool(qubes.storage.Pool):
             raise qubes.storage.StoragePoolException(
                 "zfs - invalid zpool name"
             )
-
-        self.block_devices = (block_devices or "").split(",")
-        # TODO should tell the user that they should specify these as
-        # LVM paths or by-uuid/ etc paths to prevent clashes.
 
         self.log = logging.getLogger(
             "qubes.storage.{}.{}".format(self.driver, self.zfs_ns)
@@ -314,7 +317,7 @@ class ZFSQPool(qubes.storage.Pool):
         except libzfs_core.exceptions.ZFSGenericError as e:
             self.log.warning("zfs zpool tried (failed) to destroy: {!r}".format(
                 e))
-            raise qubes.storage.StoragePoolException(e)
+            raise qubes.storage.StoragePoolException('destroy(): '+e)
         except libzfs_core.exceptions.FilesystemNotFound:
             pass
         except libzfs_core.exceptions.DatasetBusy:
@@ -700,6 +703,8 @@ class ZFSQzvol(qubes.storage.Volume):
                     self.vid,
                 ]))
             self._size = detected_size
+        except qubes.storage.StoragePoolException as e:
+            self.log.warning(e)
         except ValueError as e:
             # this can happen if size was '-\n' for some reason, like
             # if this is not an existing volume or if called on a dataset
@@ -1196,15 +1201,15 @@ def _process_zfs_output(returncode, stdout, stderr, log):
         if "exceeds the size of thin pool" not in line
     )
     if stdout:
-        log.debug(stdout)
+        log.debug('zfs output %s', stdout)
     if returncode == 0 and err:
-        log.warning(err)
+        log.warning('zfs output %s', err)
     elif returncode != 0:
         assert (
             err
         ), "Command exited unsuccessful, but printed nothing to stderr"
         err = err.replace("%", "%%")
-        raise qubes.storage.StoragePoolException(err)
+        raise qubes.storage.StoragePoolException('zfs_output:' + err)
     return True
 
 
